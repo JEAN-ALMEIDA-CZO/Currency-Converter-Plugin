@@ -1,0 +1,35 @@
+{
+  "Name": "貨幣轉換器",
+  "Description": "透過快捷鍵獲取即時匯率。",
+  "Actions": [
+    {
+      "Name": "貨幣轉換器",
+      "Tooltip": "即時匯率"
+    }
+  ],
+  "Localization": {
+    "convert": "轉換",
+    "from": "來源貨幣",
+    "to": "目標貨幣",
+    "amount": "金額",
+    "decimals": "小數位數",
+    "autoDec": "自動",
+    "refresh": "更新",
+    "interval": "每隔",
+    "minutes": "分鐘",
+    "refreshNow": "立即更新",
+    "tipPressKey": "按下按鍵即可反轉換算（互換來源貨幣與目標貨幣）。",
+    "screen": "顯示設定",
+    "scrClassic": "經典",
+    "scrChart": "圖表",
+    "scrMinimal": "極簡",
+    "theme": "主題",
+    "font": "字體",
+    "animated": "動畫",
+    "animatedHint": "柔和移動的光暈效果",
+    "tutorial": "教學",
+    "loading": "更新中…",
+    "updated": "已更新",
+    "offline": "未連線"
+  }
+}

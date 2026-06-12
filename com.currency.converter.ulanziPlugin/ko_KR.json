@@ -1,0 +1,35 @@
+{
+  "Name": "환율 변환기",
+  "Description": "키 입력으로 실시간 환율 확인.",
+  "Actions": [
+    {
+      "Name": "환율 변환기",
+      "Tooltip": "실시간 환율"
+    }
+  ],
+  "Localization": {
+    "convert": "변환",
+    "from": "원본 통화",
+    "to": "대상 통화",
+    "amount": "금액",
+    "decimals": "소수점",
+    "autoDec": "자동",
+    "refresh": "업데이트",
+    "interval": "간격",
+    "minutes": "분",
+    "refreshNow": "지금 업데이트",
+    "tipPressKey": "키를 누르면 변환이 반전됩니다 (보내는 통화와 받는 통화 교체).",
+    "screen": "화면",
+    "scrClassic": "클래식",
+    "scrChart": "차트",
+    "scrMinimal": "미니멀",
+    "theme": "테마",
+    "font": "글꼴",
+    "animated": "애니메이션",
+    "animatedHint": "움직이는 강조 효과",
+    "tutorial": "튜토리얼",
+    "loading": "업데이트 중…",
+    "updated": "업데이트 완료",
+    "offline": "연결 끊김"
+  }
+}

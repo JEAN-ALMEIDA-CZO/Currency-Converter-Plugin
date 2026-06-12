@@ -1,0 +1,35 @@
+{
+  "Name": "货币转换器",
+  "Description": "通过快捷键获取实时汇率。",
+  "Actions": [
+    {
+      "Name": "货币转换器",
+      "Tooltip": "实时汇率"
+    }
+  ],
+  "Localization": {
+    "convert": "转换",
+    "from": "源货币",
+    "to": "目标货币",
+    "amount": "金额",
+    "decimals": "小数位数",
+    "autoDec": "自动",
+    "refresh": "更新",
+    "interval": "每隔",
+    "minutes": "分钟",
+    "refreshNow": "立即更新",
+    "tipPressKey": "按下按键即可反转换算（互换源币种和目标币种）。",
+    "screen": "屏幕显示",
+    "scrClassic": "经典",
+    "scrChart": "图表",
+    "scrMinimal": "极简",
+    "theme": "主题",
+    "font": "字体",
+    "animated": "动画",
+    "animatedHint": "柔和移动的光晕效果",
+    "tutorial": "教程",
+    "loading": "更新中…",
+    "updated": "已更新",
+    "offline": "未连接"
+  }
+}

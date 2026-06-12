@@ -1,0 +1,32 @@
+{
+  "Author": "Jean Almeida",
+  "Name": "Currency Converter",
+  "Description": "Live currency converter right on your Ulanzi Deck. Pick any two of 166 currencies, set an amount, and the key shows the converted value with the live exchange rate, an up/down trend arrow and a mini chart. Press the key to invert the conversion (swap From and To). Modern animated UI, color themes, fonts and 3 screen styles. Full localization.",
+  "Category": "Currency Converter",
+  "CategoryIcon": "assets/icons/categoryIcon.svg",
+  "Icon": "assets/icons/brand.svg",
+  "Version": "1.0.0",
+  "UUID": "com.currency.converter.deck",
+  "Type": "JavaScript",
+  "CodePath": "plugin/app.js",
+  "PrivateAPI": true,
+  "SupportedInMultiActions": false,
+  "Actions": [
+    {
+      "Name": "Currency Converter",
+      "Icon": "assets/icons/actionIcon.svg",
+      "UUID": "com.currency.converter.deck.convert",
+      "PropertyInspectorPath": "property-inspector/inspector.html",
+      "States": [
+        { "Name": "Default", "Image": "assets/icons/actionIcon.svg" }
+      ],
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false
+    }
+  ],
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac",     "MinimumVersion": "10.11" }
+  ],
+  "Software": { "MinVersion": "2.1.0" }
+}

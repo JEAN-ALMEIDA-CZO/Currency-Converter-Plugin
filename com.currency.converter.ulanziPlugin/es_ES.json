@@ -1,0 +1,35 @@
+{
+  "Name": "Conversor de Divisas",
+  "Description": "Tipos de cambio en tiempo real mediante un atajo.",
+  "Actions": [
+    {
+      "Name": "Conversor de Divisas",
+      "Tooltip": "Tipos de cambio en tiempo real"
+    }
+  ],
+  "Localization": {
+    "convert": "CONVERTIR",
+    "from": "De",
+    "to": "A",
+    "amount": "Cantidad",
+    "decimals": "Decimales",
+    "autoDec": "Automático",
+    "refresh": "ACTUALIZAR",
+    "interval": "Cada",
+    "minutes": "minutos",
+    "refreshNow": "Actualizar ahora",
+    "tipPressKey": "Pulsa la tecla para invertir la conversión (intercambiar De y A).",
+    "screen": "PANTALLA",
+    "scrClassic": "Clásico",
+    "scrChart": "Gráfico",
+    "scrMinimal": "Minimalista",
+    "theme": "TEMA",
+    "font": "Fuente",
+    "animated": "Animado",
+    "animatedHint": "Efecto de brillo en movimiento",
+    "tutorial": "Tutorial",
+    "loading": "Actualizando...",
+    "updated": "actualizado",
+    "offline": "Desconectado"
+  }
+}

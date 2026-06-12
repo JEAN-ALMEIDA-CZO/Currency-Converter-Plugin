@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Currency Converter</title>
+<link rel="icon" type="image/svg+xml" href="../assets/icons/favicon.svg">
+<style>
+  :root{
+    --acc:#2ecc71; --acc2:#ffcf5c; --up:#2ecc71; --down:#ff5d5d;
+    --bg:#06120c; --bg2:#0a1812; --card:#0e1c14; --line:#1c2c22;
+    --tx:#eafff3; --mut:#6f8c7c; --r:14px;
+    --mono:'SFMono-Regular',ui-monospace,'Cascadia Code',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(900px 500px at 50% -10%,rgba(46,204,113,.12),transparent 60%),radial-gradient(800px 500px at 110% 110%,rgba(255,207,92,.07),transparent 55%);
+    background-attachment:fixed;}
+  .wrap{max-width:860px;margin:0 auto;padding:30px 20px 60px;}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:26px;font-family:var(--mono);font-size:12px;color:var(--mut);border-bottom:1px solid var(--line);padding-bottom:14px;}
+  .live{display:inline-flex;align-items:center;gap:7px;color:var(--acc);font-weight:700;letter-spacing:.14em;}
+  .live i{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc);animation:beat 1.6s ease-in-out infinite;}
+  .topbar .path{margin-left:auto;opacity:.65;}
+  .hero{display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center;opacity:0;transform:translateY(12px);animation:rise .6s ease forwards;}
+  @media(max-width:640px){.hero{grid-template-columns:1fr;}}
+  h1{font-size:clamp(30px,6vw,44px);line-height:1.05;margin:0;font-weight:800;letter-spacing:-.025em;}
+  h1 .g{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{color:var(--mut);margin:8px 0 0;font-size:15px;}
+  .keymock{width:150px;height:150px;flex:0 0 150px;border-radius:26px;box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px var(--line);}
+  .keymock svg{width:100%;height:100%;display:block;border-radius:26px;}
+  .lead{font-size:16.5px;color:#c4d6cb;margin:22px 0 6px;max-width:70ch;opacity:0;animation:rise .6s .08s ease forwards;}
+  .sec{margin:34px 0;}
+  .kicker{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);font-weight:700;margin-bottom:12px;}
+  .kicker::before{content:"// ";opacity:.55;}
+  h2{font-size:21px;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;}
+  .card{position:relative;background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;overflow:hidden;}
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent 70%);}
+  ol.steps{counter-reset:s;list-style:none;margin:0;padding:2px 0 0 6px;}
+  ol.steps li{position:relative;padding:6px 0 18px 42px;}
+  ol.steps li:not(:last-child)::after{content:"";position:absolute;left:14px;top:30px;bottom:0;width:2px;background:var(--line);}
+  ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#04140b;background:radial-gradient(circle at 35% 30%,var(--acc2),var(--acc));box-shadow:0 0 0 4px rgba(46,204,113,.12);}
+  ul.list{list-style:none;margin:0;padding:0;}
+  ul.list li{position:relative;padding:8px 0 8px 22px;color:#cfe3d6;font-size:14.5px;}
+  ul.list li::before{content:"\203A";position:absolute;left:3px;top:6px;color:var(--acc);font-weight:800;}
+  ul.list li b{color:#eafff3;}
+  .screens{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:560px){.screens{grid-template-columns:1fr;}}
+  .scr{padding:14px;border-radius:12px;background:#0a1610;border:1px solid var(--line);}
+  .scrtag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#04140b;background:var(--acc);display:inline-block;padding:3px 8px;border-radius:6px;font-weight:700;margin-bottom:8px;}
+  .scrname{font-weight:700;font-size:14px;margin-bottom:3px;}
+  .scrdesc{color:var(--mut);font-size:12.5px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+  .grid2 .sec{margin:0;}
+  .credits{margin-top:44px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,#0c1812,#0a0f0c);border:1px solid var(--line);border-radius:18px;padding:22px;}
+  @media(max-width:520px){.credits{flex-direction:column;text-align:center;}}
+  .avatar{width:78px;height:78px;border-radius:18px;flex:0 0 78px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:#04140b;background:linear-gradient(135deg,var(--acc),#0a7a45);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.45);}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cby{color:var(--mut);font-size:12px;font-family:var(--mono);letter-spacing:.05em;}
+  .cname2{font-size:20px;font-weight:800;margin:2px 0 12px;}
+  .social{display:flex;gap:10px;flex-wrap:wrap;}
+  .social a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--tx);background:#10211a;border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;font-size:13px;transition:all .15s;}
+  .social a:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-2px);}
+  .social svg{width:17px;height:17px;fill:currentColor;}
+  .foot{color:#4f5d54;font-size:11px;text-align:center;margin-top:24px;font-family:var(--mono);}
+  @keyframes rise{to{opacity:1;transform:none;}}
+  @keyframes beat{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(.55);opacity:.5;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <span class="live"><i></i>LIVE</span>
+    <span>currency-converter · ulanzi deck</span>
+    <span class="path">v1.0.0</span>
+  </div>
+
+  <div class="hero">
+    <div>
+      <h1 id="title"><span class="g">Currency</span> Converter</h1>
+      <div class="sub" id="sub">Live exchange rates on your Ulanzi Deck</div>
+    </div>
+    <div class="keymock" aria-hidden="true">
+      <svg viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="36" fill="#06140d"/>
+        <text x="128" y="46" text-anchor="middle" fill="#34d399" font-size="23" font-weight="bold" font-family="Arial">USD → BRL</text>
+        <line x1="34" y1="58" x2="222" y2="58" stroke="#103324" stroke-width="2"/>
+        <text x="128" y="128" text-anchor="middle" dominant-baseline="middle" fill="#eafff3" font-size="56" font-weight="bold" font-family="Arial">R$5.18</text>
+        <text x="128" y="172" text-anchor="middle" fill="#5f8a74" font-size="16" font-family="Arial">1 USD = 5.1756 BRL</text>
+        <text x="128" y="208" text-anchor="middle" fill="#2ecc71" font-size="21" font-weight="bold" font-family="Arial">▲ +0.84%</text>
+      </svg>
+    </div>
+  </div>
+
+  <p class="lead" id="p_what"></p>
+
+  <div class="sec">
+    <span class="kicker" id="k_how">Setup</span>
+    <h2 id="h_how">How it works</h2>
+    <div class="card"><ol class="steps" id="l_how"></ol></div>
+  </div>
+
+  <div class="sec">
+    <span class="kicker" id="k_scr">Layouts</span>
+    <h2 id="h_scr">Three screen styles</h2>
+    <div class="card"><div class="screens" id="l_scr"></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="sec">
+      <span class="kicker" id="k_use">On the key</span>
+      <h2 id="h_use">Reading the key</h2>
+      <div class="card"><ul class="list" id="l_use"></ul></div>
+    </div>
+    <div class="sec">
+      <span class="kicker" id="k_tips">Get the most</span>
+      <h2 id="h_tips">Tips</h2>
+      <div class="card"><ul class="list" id="l_tips"></ul></div>
+    </div>
+  </div>
+
+  <div class="credits">
+    <div class="avatar"><img src="../assets/author.jpg" alt="Jean Almeida" onerror="this.remove(); this.parentNode.textContent='JA';"></div>
+    <div>
+      <div class="cby" id="c_by">Developed by</div>
+      <div class="cname2">Jean Almeida</div>
+      <div class="social">
+        <a href="https://www.linkedin.com/in/jeanc-almeida/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+          <span>LinkedIn</span>
+        </a>
+        <a href="https://github.com/JEAN-ALMEIDA-CZO/Currency-Converter-Plugin" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a href="https://portifolio.athos.app.br/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.8a15.7 15.7 0 0 0-1.3-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.1 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.9 1.9-4zM4.3 14a8 8 0 0 1 0-4h3.2a16.8 16.8 0 0 0 0 4H4.3zm.8 2h2.8c.3 1.3.8 2.5 1.3 3.6A8 8 0 0 1 5.1 16zm2.8-8H5.1a8 8 0 0 1 4.1-3.6A15.7 15.7 0 0 0 7.9 8zM12 20c-.8-1.1-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.9-1.9 4zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4zm.4 5.6c.5-1.1 1-2.3 1.3-3.6h2.8a8 8 0 0 1-4.1 3.6zM16.5 14a16.8 16.8 0 0 0 0-4h3.2a8 8 0 0 1 0 4h-3.2z"/></svg>
+          <span id="c_site">Portfolio</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot" id="foot">💱 Currency Converter — Ulanzi Deck plugin</div>
+</div>
+
+<script>
+const TUT = {
+  en:{ title:'<span class="g">Currency</span> Converter', sub:'Live exchange rates on your Ulanzi Deck',
+    p_what:'Currency Converter turns a key into a live exchange-rate display. Pick any two of 166 currencies, set an amount, and the key shows the converted value with the current rate and a trend arrow. Press the key any time to invert the conversion (swap From and To).',
+    k_how:'Setup', h_how:'How it works',
+    l_how:['Choose the From and To currencies (166 available) and the amount you want to convert.','The key shows the converted value, the live rate and an up/down trend arrow.','<b>Press the key</b> to invert the conversion — swap From and To instantly.','Set an auto-update interval (in minutes); rates refresh in the background.','Pick a screen style, theme and font to taste.'],
+    k_scr:'Layouts', h_scr:'Three screen styles',
+    l_scr:[['CLASSIC','Classic','Big converted value, live rate line and change %.'],['CHART','Chart','Mini trend chart of the rate plus the converted value.'],['MINIMAL','Minimal','Just the converted value and trend — clean and bold.']],
+    k_use:'On the key', h_use:'Reading the key',
+    l_use:['Top: the pair (and your amount), e.g. <b>10 USD → BRL</b>.','Centre: the converted value in the target currency.','Rate line: <b>1 USD = 5.1756 BRL</b> (Classic).','Arrow + %: trend vs the previous update (green up / red down).','Bottom: the time of the last update.'],
+    k_tips:'Get the most', h_tips:'Tips',
+    l_tips:['Press the key to instantly swap From and To.','Use the swap button to flip From/To instantly.','166 currencies — majors, Latin America, Europe, Asia and more.','Turn on Animated for a subtle moving accent; pick decimals for precision.'],
+    c_by:'Developed by', foot:'💱 Currency Converter — Ulanzi Deck plugin' },
+
+  pt_BR:{ title:'<span class="g">Conversor</span> de Moedas', sub:'Cotações ao vivo no seu Ulanzi Deck',
+    p_what:'O Conversor de Moedas transforma uma tecla num painel de câmbio ao vivo. Escolha duas entre 166 moedas, defina um valor, e a tecla mostra o valor convertido com a cotação atual e uma seta de tendência. Pressione a tecla a qualquer momento para inverter a conversão (trocar De e Para).',
+    k_how:'Configuração', h_how:'Como funciona',
+    l_how:['Escolha as moedas De e Para (166 disponíveis) e o valor que quer converter.','A tecla mostra o valor convertido, a cotação ao vivo e uma seta de alta/baixa.','<b>Pressione a tecla</b> para inverter a conversão — troca De e Para na hora.','Defina um intervalo de atualização automática (em minutos); atualiza em segundo plano.','Escolha o estilo de tela, tema e fonte ao seu gosto.'],
+    k_scr:'Telas', h_scr:'Três estilos de tela',
+    l_scr:[['CLÁSSICO','Clássico','Valor convertido grande, linha da cotação e variação %.'],['GRÁFICO','Gráfico','Mini gráfico de tendência da cotação + valor convertido.'],['MÍNIMO','Mínimo','Só o valor convertido e a tendência — limpo e marcante.']],
+    k_use:'Na tecla', h_use:'Lendo a tecla',
+    l_use:['Topo: o par (e seu valor), ex. <b>10 USD → BRL</b>.','Centro: o valor convertido na moeda de destino.','Linha de cotação: <b>1 USD = 5,1756 BRL</b> (Clássico).','Seta + %: tendência vs a atualização anterior (verde sobe / vermelho cai).','Rodapé: o horário da última atualização.'],
+    k_tips:'Aproveite ao máximo', h_tips:'Dicas',
+    l_tips:['Pressione a tecla para trocar De e Para na hora.','Use o botão de troca para inverter De/Para na hora.','166 moedas — principais, América Latina, Europa, Ásia e mais.','Ative o Animado para um brilho suave; escolha os decimais para precisão.'],
+    c_by:'Desenvolvido por', foot:'💱 Conversor de Moedas — plugin para Ulanzi Deck' },
+
+  pt_PT:{ title:'<span class="g">Conversor</span> de Moedas', sub:'Cotações em direto no seu Ulanzi Deck',
+    p_what:'O Conversor de Moedas transforma uma tecla num painel de câmbio em direto. Escolha duas entre 166 moedas, defina um valor, e a tecla mostra o valor convertido com a cotação atual e uma seta de tendência. Prima a tecla a qualquer momento para inverter a conversão (trocar De e Para).',
+    k_how:'Configuração', h_how:'Como funciona',
+    l_how:['Escolha as moedas De e Para (166 disponíveis) e o valor a converter.','A tecla mostra o valor convertido, a cotação em direto e uma seta de subida/descida.','<b>Prima a tecla</b> para inverter a conversão — troca De e Para na hora.','Defina um intervalo de atualização automática (em minutos); atualiza em segundo plano.','Escolha o estilo de ecrã, tema e tipo de letra ao seu gosto.'],
+    k_scr:'Ecrãs', h_scr:'Três estilos de ecrã',
+    l_scr:[['CLÁSSICO','Clássico','Valor convertido grande, linha da cotação e variação %.'],['GRÁFICO','Gráfico','Mini gráfico de tendência da cotação + valor convertido.'],['MÍNIMO','Mínimo','Só o valor convertido e a tendência — limpo e marcante.']],
+    k_use:'Na tecla', h_use:'Ler a tecla',
+    l_use:['Topo: o par (e o seu valor), ex. <b>10 USD → BRL</b>.','Centro: o valor convertido na moeda de destino.','Linha de cotação: <b>1 USD = 5,1756 BRL</b> (Clássico).','Seta + %: tendência vs a atualização anterior (verde sobe / vermelho desce).','Rodapé: a hora da última atualização.'],
+    k_tips:'Tire o máximo', h_tips:'Dicas',
+    l_tips:['Prima a tecla para trocar De e Para na hora.','Use o botão de troca para inverter De/Para na hora.','166 moedas — principais, América Latina, Europa, Ásia e mais.','Ative o Animado para um brilho suave; escolha as casas decimais para precisão.'],
+    c_by:'Desenvolvido por', foot:'💱 Conversor de Moedas — plugin para Ulanzi Deck' },
+
+  es_ES:{ title:'<span class="g">Conversor</span> de Divisas', sub:'Tipos de cambio en vivo en tu Ulanzi Deck',
+    p_what:'El Conversor de Divisas convierte una tecla en un panel de cambio en vivo. Elige dos de 166 divisas, fija un importe, y la tecla muestra el valor convertido con el cambio actual y una flecha de tendencia. Pulsa la tecla cuando quieras para invertir la conversión (intercambiar De y A).',
+    k_how:'Configuración', h_how:'Cómo funciona',
+    l_how:['Elige las divisas De y A (166 disponibles) y el importe a convertir.','La tecla muestra el valor convertido, el cambio en vivo y una flecha de subida/bajada.','<b>Pulsa la tecla</b> para invertir la conversión — intercambia De y A al instante.','Fija un intervalo de actualización automática (en minutos); se actualiza en segundo plano.','Elige el estilo de pantalla, tema y fuente a tu gusto.'],
+    k_scr:'Pantallas', h_scr:'Tres estilos de pantalla',
+    l_scr:[['CLÁSICO','Clásico','Valor convertido grande, línea del cambio y variación %.'],['GRÁFICO','Gráfico','Mini gráfico de tendencia del cambio + valor convertido.'],['MÍNIMO','Mínimo','Solo el valor convertido y la tendencia — limpio y claro.']],
+    k_use:'En la tecla', h_use:'Leer la tecla',
+    l_use:['Arriba: el par (y tu importe), p. ej. <b>10 USD → BRL</b>.','Centro: el valor convertido en la divisa destino.','Línea de cambio: <b>1 USD = 5,1756 BRL</b> (Clásico).','Flecha + %: tendencia vs la actualización anterior (verde sube / rojo baja).','Abajo: la hora de la última actualización.'],
+    k_tips:'Aprovecha al máximo', h_tips:'Consejos',
+    l_tips:['Pulsa la tecla para intercambiar De y A al instante.','Usa el botón de intercambio para invertir De/A al instante.','166 divisas — principales, Latinoamérica, Europa, Asia y más.','Activa Animado para un brillo sutil; elige los decimales para precisión.'],
+    c_by:'Desarrollado por', foot:'💱 Conversor de Divisas — plugin para Ulanzi Deck' },
+
+  fr_FR:{ title:'<span class="g">Convertisseur</span> de Devises', sub:'Taux de change en direct sur votre Ulanzi Deck',
+    p_what:'Le Convertisseur de Devises transforme une touche en afficheur de taux en direct. Choisissez deux des 166 devises, indiquez un montant, et la touche affiche la valeur convertie avec le taux actuel et une flèche de tendance. Appuyez sur la touche à tout moment pour inverser la conversion (permuter De et Vers).',
+    k_how:'Configuration', h_how:'Fonctionnement',
+    l_how:['Choisissez les devises De et Vers (166 disponibles) et le montant à convertir.','La touche affiche la valeur convertie, le taux en direct et une flèche de hausse/baisse.','<b>Appuyez sur la touche</b> pour inverser la conversion — permuter De et Vers instantanément.','Définissez un intervalle d’actualisation auto (en minutes) ; mise à jour en arrière-plan.','Choisissez le style d’écran, le thème et la police selon vos goûts.'],
+    k_scr:'Écrans', h_scr:'Trois styles d’écran',
+    l_scr:[['CLASSIQUE','Classique','Grande valeur convertie, ligne du taux et variation %.'],['GRAPHIQUE','Graphique','Mini graphique de tendance du taux + valeur convertie.'],['MINIMAL','Minimal','Juste la valeur convertie et la tendance — net et clair.']],
+    k_use:'Sur la touche', h_use:'Lire la touche',
+    l_use:['Haut : la paire (et votre montant), ex. <b>10 USD → BRL</b>.','Centre : la valeur convertie dans la devise cible.','Ligne de taux : <b>1 USD = 5,1756 BRL</b> (Classique).','Flèche + % : tendance vs la mise à jour précédente (vert hausse / rouge baisse).','Bas : l’heure de la dernière mise à jour.'],
+    k_tips:'Tirez-en le meilleur', h_tips:'Astuces',
+    l_tips:['Appuyez sur la touche pour permuter De et Vers instantanément.','Utilisez le bouton d’échange pour inverser De/Vers instantanément.','166 devises — principales, Amérique latine, Europe, Asie et plus.','Activez Animé pour une lueur douce ; choisissez les décimales pour la précision.'],
+    c_by:'Développé par', foot:'💱 Convertisseur de Devises — plugin Ulanzi Deck' },
+
+  de_DE:{ title:'<span class="g">Währungs</span>rechner', sub:'Live-Wechselkurse auf deinem Ulanzi Deck',
+    p_what:'Der Währungsrechner macht aus einer Taste eine Live-Kursanzeige. Wähle zwei von 166 Währungen, gib einen Betrag ein, und die Taste zeigt den umgerechneten Wert mit dem aktuellen Kurs und einem Trendpfeil. Drücke die Taste jederzeit, um die Umrechnung umzukehren (Von und Nach tauschen).',
+    k_how:'Einrichtung', h_how:'So funktioniert es',
+    l_how:['Wähle die Von- und Nach-Währung (166 verfügbar) und den Betrag.','Die Taste zeigt den umgerechneten Wert, den Live-Kurs und einen Auf/Ab-Pfeil.','<b>Drücke die Taste</b>, um die Umrechnung umzukehren — Von und Nach sofort tauschen.','Lege ein Auto-Update-Intervall fest (in Minuten); Aktualisierung im Hintergrund.','Wähle Ansicht, Design und Schrift nach Geschmack.'],
+    k_scr:'Ansichten', h_scr:'Drei Ansichts-Stile',
+    l_scr:[['KLASSISCH','Klassisch','Großer Wert, Kurszeile und Änderung %.'],['DIAGRAMM','Diagramm','Mini-Trenddiagramm des Kurses + umgerechneter Wert.'],['MINIMAL','Minimal','Nur der Wert und der Trend — klar und kräftig.']],
+    k_use:'Auf der Taste', h_use:'Die Taste lesen',
+    l_use:['Oben: das Paar (und dein Betrag), z. B. <b>10 USD → BRL</b>.','Mitte: der umgerechnete Wert in der Zielwährung.','Kurszeile: <b>1 USD = 5,1756 BRL</b> (Klassisch).','Pfeil + %: Trend vs. letztes Update (grün hoch / rot runter).','Unten: Zeit des letzten Updates.'],
+    k_tips:'Hol das Beste heraus', h_tips:'Tipps',
+    l_tips:['Drücke die Taste, um Von und Nach sofort zu tauschen.','Mit dem Tausch-Button Von/Nach sofort umdrehen.','166 Währungen — Majors, Lateinamerika, Europa, Asien und mehr.','Aktiviere Animiert für einen sanften Akzent; wähle Dezimalstellen für Präzision.'],
+    c_by:'Entwickelt von', foot:'💱 Währungsrechner — Ulanzi-Deck-Plugin' },
+
+  it_IT:{ title:'<span class="g">Convertitore</span> di Valute', sub:'Cambi in tempo reale sul tuo Ulanzi Deck',
+    p_what:'Il Convertitore di Valute trasforma un tasto in un display dei cambi in tempo reale. Scegli due tra 166 valute, imposta un importo, e il tasto mostra il valore convertito con il cambio attuale e una freccia di tendenza. Premi il tasto in qualsiasi momento per invertire la conversione (scambia Da e A).',
+    k_how:'Configurazione', h_how:'Come funziona',
+    l_how:['Scegli le valute Da e A (166 disponibili) e l’importo da convertire.','Il tasto mostra il valore convertito, il cambio live e una freccia su/giù.','<b>Premi il tasto</b> per invertire la conversione — scambia Da e A all’istante.','Imposta un intervallo di aggiornamento automatico (in minuti); aggiorna in background.','Scegli stile schermo, tema e carattere a piacere.'],
+    k_scr:'Schermi', h_scr:'Tre stili di schermo',
+    l_scr:[['CLASSICO','Classico','Grande valore convertito, riga del cambio e variazione %.'],['GRAFICO','Grafico','Mini grafico di tendenza del cambio + valore convertito.'],['MINIMO','Minimo','Solo il valore convertito e la tendenza — pulito e netto.']],
+    k_use:'Sul tasto', h_use:'Leggere il tasto',
+    l_use:['In alto: la coppia (e il tuo importo), es. <b>10 USD → BRL</b>.','Centro: il valore convertito nella valuta di destinazione.','Riga cambio: <b>1 USD = 5,1756 BRL</b> (Classico).','Freccia + %: tendenza vs l’aggiornamento precedente (verde su / rosso giù).','In basso: l’ora dell’ultimo aggiornamento.'],
+    k_tips:'Sfrutta al massimo', h_tips:'Suggerimenti',
+    l_tips:['Premi il tasto per scambiare Da e A all’istante.','Usa il pulsante di scambio per invertire Da/A all’istante.','166 valute — principali, America Latina, Europa, Asia e altro.','Attiva Animato per un bagliore lieve; scegli i decimali per la precisione.'],
+    c_by:'Sviluppato da', foot:'💱 Convertitore di Valute — plugin Ulanzi Deck' },
+
+  ja_JP:{ title:'<span class="g">通貨</span>コンバーター', sub:'Ulanzi Deck にライブ為替レート',
+    p_what:'通貨コンバーターはキーをライブ為替レート表示に変えます。166の通貨から2つを選び、金額を設定すると、キーに換算額・現在レート・トレンド矢印が表示されます。いつでもキーを押すと変換が反転します（変換元と変換先を入れ替え）。',
+    k_how:'設定', h_how:'仕組み',
+    l_how:['変換元と変換先の通貨（166）と金額を選びます。','キーに換算額・ライブレート・上下の矢印が表示されます。','<b>キーを押す</b>と変換が反転 — 変換元と変換先を即入れ替え。','自動更新間隔（分）を設定 — バックグラウンドで更新します。','画面スタイル・テーマ・フォントを好みで選べます。'],
+    k_scr:'レイアウト', h_scr:'3つの画面スタイル',
+    l_scr:[['クラシック','クラシック','大きな換算額・レート行・変化率。'],['チャート','チャート','レートのミニトレンドチャート＋換算額。'],['ミニマル','ミニマル','換算額とトレンドのみ — すっきり大胆。']],
+    k_use:'キー上', h_use:'キーの見方',
+    l_use:['上：通貨ペア（と金額）、例 <b>10 USD → BRL</b>。','中央：変換先通貨での換算額。','レート行：<b>1 USD = 5.1756 BRL</b>（クラシック）。','矢印＋%：前回更新との傾向（緑＝上昇／赤＝下落）。','下：最終更新の時刻。'],
+    k_tips:'活用のヒント', h_tips:'ヒント',
+    l_tips:['キーを押すと変換元/先を即座に入れ替え。','入れ替えボタンで変換元/先を即座に反転。','166の通貨 — 主要・中南米・欧州・アジアほか。','アニメーションをオンで控えめな動き、小数桁で精度調整。'],
+    c_by:'開発者', foot:'💱 通貨コンバーター — Ulanzi Deck プラグイン' },
+
+  ko_KR:{ title:'<span class="g">환율</span> 변환기', sub:'Ulanzi Deck에 실시간 환율',
+    p_what:'환율 변환기는 키를 실시간 환율 표시기로 바꿔 줍니다. 166개 통화 중 둘을 고르고 금액을 설정하면, 키에 변환 금액·현재 환율·추세 화살표가 표시됩니다. 언제든 키를 누르면 변환이 반전됩니다 (보내는/받는 통화 교체).',
+    k_how:'설정', h_how:'작동 방식',
+    l_how:['보내는/받는 통화(166개)와 변환할 금액을 선택합니다.','키에 변환 금액·실시간 환율·상승/하락 화살표가 표시됩니다.','<b>키를 누르면</b> 변환이 반전됩니다 — 보내는/받는 통화 즉시 교체.','자동 업데이트 간격(분)을 설정하면 백그라운드에서 갱신됩니다.','화면 스타일·테마·글꼴을 취향대로 선택하세요.'],
+    k_scr:'레이아웃', h_scr:'세 가지 화면 스타일',
+    l_scr:[['클래식','클래식','큰 변환 금액·환율 줄·변동 %.'],['차트','차트','환율 미니 추세 차트 + 변환 금액.'],['미니멀','미니멀','변환 금액과 추세만 — 깔끔하고 굵게.']],
+    k_use:'키에서', h_use:'키 읽는 법',
+    l_use:['상단: 통화쌍(과 금액), 예 <b>10 USD → BRL</b>.','중앙: 대상 통화로 변환된 금액.','환율 줄: <b>1 USD = 5.1756 BRL</b>(클래식).','화살표 + %: 이전 업데이트 대비 추세(초록 상승 / 빨강 하락).','하단: 마지막 업데이트 시각.'],
+    k_tips:'최대한 활용하기', h_tips:'팁',
+    l_tips:['키를 누르면 보내는/받는 통화가 즉시 바뀝니다.','교체 버튼으로 보내는/받는 통화를 즉시 전환.','166개 통화 — 주요·중남미·유럽·아시아 등.','애니메이션을 켜 은은한 강조, 소수점으로 정밀도 조절.'],
+    c_by:'개발자', foot:'💱 환율 변환기 — Ulanzi Deck 플러그인' },
+
+  zh_CN:{ title:'<span class="g">货币</span>转换器', sub:'Ulanzi Deck 上的实时汇率',
+    p_what:'货币转换器把一个按键变成实时汇率显示。从 166 种货币中选两种，设置金额，按键即显示换算金额、当前汇率和趋势箭头。随时按下按键即可反转换算（互换源/目标货币）。',
+    k_how:'设置', h_how:'工作原理',
+    l_how:['选择「从」和「到」货币（166 种）以及要换算的金额。','按键显示换算金额、实时汇率和涨/跌箭头。','<b>按下按键</b>即可反转换算 — 即时互换源/目标货币。','设置自动更新间隔（分钟），后台自动刷新。','按喜好选择屏幕样式、主题和字体。'],
+    k_scr:'布局', h_scr:'三种屏幕样式',
+    l_scr:[['经典','经典','大号换算金额、汇率行和变化 %。'],['图表','图表','汇率迷你趋势图 + 换算金额。'],['极简','极简','只显示换算金额和趋势 — 简洁醒目。']],
+    k_use:'按键上', h_use:'读取按键',
+    l_use:['顶部：货币对（及金额），如 <b>10 USD → BRL</b>。','中部：以目标货币显示的换算金额。','汇率行：<b>1 USD = 5.1756 BRL</b>（经典）。','箭头 + %：相对上次更新的趋势（绿涨 / 红跌）。','底部：最后更新时间。'],
+    k_tips:'用到极致', h_tips:'提示',
+    l_tips:['按下按键即可即时对调源/目标货币。','用交换按钮即时对调「从/到」。','166 种货币 — 主要货币、拉美、欧洲、亚洲等。','开启动画获得柔和光晕；用小数位调整精度。'],
+    c_by:'开发者', foot:'💱 货币转换器 — Ulanzi Deck 插件' },
+
+  zh_HK:{ title:'<span class="g">貨幣</span>轉換器', sub:'Ulanzi Deck 上的即時匯率',
+    p_what:'貨幣轉換器把一個按鍵變成即時匯率顯示。從 166 種貨幣中選兩種，設定金額，按鍵即顯示換算金額、目前匯率和趨勢箭頭。隨時按下按鍵即可反轉換算（互換來源/目標貨幣）。',
+    k_how:'設定', h_how:'運作方式',
+    l_how:['選擇「從」和「到」貨幣（166 種）以及要換算的金額。','按鍵顯示換算金額、即時匯率和升/跌箭頭。','<b>按下按鍵</b>即可反轉換算 — 即時互換來源/目標貨幣。','設定自動更新間隔（分鐘），背景自動重新整理。','按喜好選擇螢幕樣式、主題和字體。'],
+    k_scr:'版面', h_scr:'三種螢幕樣式',
+    l_scr:[['經典','經典','大號換算金額、匯率行和變化 %。'],['圖表','圖表','匯率迷你趨勢圖 + 換算金額。'],['極簡','極簡','只顯示換算金額和趨勢 — 簡潔醒目。']],
+    k_use:'按鍵上', h_use:'讀取按鍵',
+    l_use:['頂部：貨幣對（及金額），如 <b>10 USD → BRL</b>。','中部：以目標貨幣顯示的換算金額。','匯率行：<b>1 USD = 5.1756 BRL</b>（經典）。','箭頭 + %：相對上次更新的趨勢（綠升 / 紅跌）。','底部：最後更新時間。'],
+    k_tips:'發揮最大效用', h_tips:'提示',
+    l_tips:['按下按鍵即可即時對調來源/目標貨幣。','用交換按鈕即時對調「從/到」。','166 種貨幣 — 主要貨幣、拉美、歐洲、亞洲等。','開啟動畫獲得柔和光暈；用小數位調整精度。'],
+    c_by:'開發者', foot:'💱 貨幣轉換器 — Ulanzi Deck 外掛' }
+};
+
+function detectLang(){
+  const hash=new URLSearchParams((location.hash||'').replace(/^#/,'')).get('lang');
+  const q=new URLSearchParams(location.search).get('lang')||hash;
+  let l=(q||navigator.language||'en').replace('-','_');
+  if(/^zh/i.test(l)) return (/CN|Hans/i.test(l))?'zh_CN':'zh_HK';
+  if(/^pt/i.test(l)) return (/PT/i.test(l))?'pt_PT':'pt_BR';
+  if(/^en/i.test(l)) return 'en';
+  if(TUT[l]) return l;
+  const map={es:'es_ES',de:'de_DE',fr:'fr_FR',it:'it_IT',ja:'ja_JP',ko:'ko_KR'};
+  const s=l.split('_')[0];
+  return map[s]||(TUT[s]?s:'en');
+}
+
+const d=TUT[detectLang()]||TUT.en;
+document.documentElement.lang=detectLang();
+const set=(id,html)=>{const e=document.getElementById(id); if(e) e.innerHTML=html;};
+const txt=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
+document.title=(d.title||'Currency Converter').replace(/<[^>]+>/g,'');
+set('title',d.title); txt('sub',d.sub); txt('p_what',d.p_what);
+txt('k_how',d.k_how); txt('h_how',d.h_how);
+txt('k_scr',d.k_scr); txt('h_scr',d.h_scr);
+txt('k_use',d.k_use); txt('h_use',d.h_use);
+txt('k_tips',d.k_tips); txt('h_tips',d.h_tips);
+txt('c_by',d.c_by); txt('foot',d.foot);
+const PF={pt_BR:'Portfólio',pt_PT:'Portfólio',es_ES:'Portafolio',fr_FR:'Portfolio',de_DE:'Portfolio',it_IT:'Portfolio',ja_JP:'ポートフォリオ',ko_KR:'포트폴리오',zh_CN:'作品集',zh_HK:'作品集',en:'Portfolio'};
+txt('c_site', PF[detectLang()]||'Portfolio');
+
+const li=(id,arr)=>set(id,arr.map(x=>`<li>${x}</li>`).join(''));
+li('l_how',d.l_how); li('l_use',d.l_use); li('l_tips',d.l_tips);
+set('l_scr', d.l_scr.map(([tag,name,desc])=>`<div class="scr"><span class="scrtag">${tag}</span><div class="scrname">${name}</div><div class="scrdesc">${desc}</div></div>`).join(''));
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "Name": "Conversor de Moedas",
+  "Description": "Cotações em direto na sua tecla.",
+  "Actions": [
+    {
+      "Name": "Conversor de Moedas",
+      "Tooltip": "Cotações em direto"
+    }
+  ],
+  "Localization": {
+    "convert": "CONVERTER",
+    "from": "De",
+    "to": "Para",
+    "amount": "Valor",
+    "decimals": "Decimais",
+    "autoDec": "Auto",
+    "refresh": "ATUALIZAR",
+    "interval": "A cada",
+    "minutes": "Minutos",
+    "refreshNow": "Atualizar agora",
+    "tipPressKey": "Pressione a tecla para inverter a conversão (trocar De e Para).",
+    "screen": "ECRÃ",
+    "scrClassic": "Clássico",
+    "scrChart": "Gráfico",
+    "scrMinimal": "Mínimo",
+    "theme": "TEMA",
+    "font": "Tipo de letra",
+    "animated": "Animado",
+    "animatedHint": "Brilho suave em movimento",
+    "tutorial": "Tutorial",
+    "loading": "A atualizar…",
+    "updated": "Atualizado",
+    "offline": "Offline"
+  }
+}

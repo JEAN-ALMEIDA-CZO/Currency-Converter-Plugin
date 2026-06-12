@@ -1,0 +1,35 @@
+{
+  "Name": "Convertitore di Valuta",
+  "Description": "Tassi di cambio in tempo reale accessibili istantaneamente.",
+  "Actions": [
+    {
+      "Name": "Convertitore di Valuta",
+      "Tooltip": "Tassi di cambio in tempo reale"
+    }
+  ],
+  "Localization": {
+    "convert": "CONVERTI",
+    "from": "Da",
+    "to": "A",
+    "amount": "Importo",
+    "decimals": "Decimali",
+    "autoDec": "Automatico",
+    "refresh": "AGGIORNA",
+    "interval": "Ogni",
+    "minutes": "minuti",
+    "refreshNow": "Aggiorna ora",
+    "tipPressKey": "Premi il tasto per invertire la conversione (scambia Da e A).",
+    "screen": "SCHERMO",
+    "scrClassic": "Classico",
+    "scrChart": "Grafico",
+    "scrMinimal": "Minimale",
+    "theme": "TEMA",
+    "font": "Carattere",
+    "animated": "Animato",
+    "animatedHint": "Effetto bagliore in movimento",
+    "tutorial": "Tutorial",
+    "loading": "Aggiornamento in corso...",
+    "updated": "aggiornato",
+    "offline": "Disconnesso"
+  }
+}

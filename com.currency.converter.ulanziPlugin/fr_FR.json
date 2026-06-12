@@ -1,0 +1,35 @@
+{
+  "Name": "Convertisseur de Devises",
+  "Description": "Taux de change en temps réel via un raccourci clavier.",
+  "Actions": [
+    {
+      "Name": "Convertisseur de Devises",
+      "Tooltip": "Taux de change en temps réel"
+    }
+  ],
+  "Localization": {
+    "convert": "CONVERTIR",
+    "from": "De",
+    "to": "Vers",
+    "amount": "Montant",
+    "decimals": "Nombre de décimales",
+    "autoDec": "Automatique",
+    "refresh": "ACTUALISER",
+    "interval": "Toutes les",
+    "minutes": "minutes",
+    "refreshNow": "Actualiser maintenant",
+    "tipPressKey": "Appuyez sur la touche pour inverser la conversion (permuter De et Vers).",
+    "screen": "ÉCRAN",
+    "scrClassic": "Classique",
+    "scrChart": "Graphique",
+    "scrMinimal": "Minimaliste",
+    "theme": "THÈME",
+    "font": "Police",
+    "animated": "Animé",
+    "animatedHint": "Effet de lueur en mouvement",
+    "tutorial": "Tutoriel",
+    "loading": "Mise à jour en cours...",
+    "updated": "mis à jour",
+    "offline": "Déconnecté"
+  }
+}

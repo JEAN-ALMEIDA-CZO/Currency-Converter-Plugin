@@ -1,0 +1,35 @@
+{
+  "Name": "Währungsrechner",
+  "Description": "Echtzeit-Wechselkurse per Tastendruck.",
+  "Actions": [
+    {
+      "Name": "Währungsrechner",
+      "Tooltip": "Echtzeit-Wechselkurse"
+    }
+  ],
+  "Localization": {
+    "convert": "UMRECHNEN",
+    "from": "Von",
+    "to": "Nach",
+    "amount": "Betrag",
+    "decimals": "Nachkommastellen",
+    "autoDec": "Automatisch",
+    "refresh": "AKTUALISIEREN",
+    "interval": "Alle",
+    "minutes": "Minuten",
+    "refreshNow": "Jetzt aktualisieren",
+    "tipPressKey": "Drücke die Taste, um die Umrechnung umzukehren (Von und Nach tauschen).",
+    "screen": "ANSICHT",
+    "scrClassic": "Klassisch",
+    "scrChart": "Diagramm",
+    "scrMinimal": "Minimal",
+    "theme": "DESIGN",
+    "font": "Schriftart",
+    "animated": "Animiert",
+    "animatedHint": "Sanft bewegter Akzenteffekt",
+    "tutorial": "Anleitung",
+    "loading": "Aktualisierung läuft…",
+    "updated": "aktualisiert",
+    "offline": "Getrennt"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "Name": "Currency Converter",
+  "Description": "Live exchange rates with a keystroke.",
+  "Actions": [
+    {
+      "Name": "Currency Converter",
+      "Tooltip": "Live exchange rates"
+    }
+  ],
+  "Localization": {
+    "convert": "CONVERT",
+    "from": "From",
+    "to": "To",
+    "amount": "Amount",
+    "decimals": "Decimal places",
+    "autoDec": "Auto",
+    "refresh": "UPDATE",
+    "interval": "Every",
+    "minutes": "minutes",
+    "refreshNow": "Update now",
+    "tipPressKey": "Press the key to invert the conversion (swap From and To).",
+    "screen": "SCREEN",
+    "scrClassic": "Classic",
+    "scrChart": "Chart",
+    "scrMinimal": "Minimal",
+    "theme": "THEME",
+    "font": "Font",
+    "animated": "Animated",
+    "animatedHint": "Subtle moving accent",
+    "tutorial": "Tutorial",
+    "loading": "updating...",
+    "updated": "updated",
+    "offline": "Disconnected"
+  }
+}

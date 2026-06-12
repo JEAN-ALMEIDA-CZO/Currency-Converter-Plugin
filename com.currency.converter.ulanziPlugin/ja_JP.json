@@ -1,0 +1,35 @@
+{
+  "Name": "通貨コンバーター",
+  "Description": "キー操作でリアルタイム為替レートを表示。",
+  "Actions": [
+    {
+      "Name": "通貨コンバーター",
+      "Tooltip": "リアルタイム為替レート"
+    }
+  ],
+  "Localization": {
+    "convert": "変換",
+    "from": "変換元",
+    "to": "変換先",
+    "amount": "金額",
+    "decimals": "小数点以下",
+    "autoDec": "自動",
+    "refresh": "更新",
+    "interval": "間隔",
+    "minutes": "分",
+    "refreshNow": "今すぐ更新",
+    "tipPressKey": "キーを押すと変換が反転します（「変換元」と「変換先」を入れ替え）。",
+    "screen": "表示設定",
+    "scrClassic": "クラシック",
+    "scrChart": "チャート",
+    "scrMinimal": "ミニマル",
+    "theme": "テーマ",
+    "font": "フォント",
+    "animated": "アニメーション",
+    "animatedHint": "動きのある光沢エフェクト",
+    "tutorial": "チュートリアル",
+    "loading": "更新中…",
+    "updated": "更新済み",
+    "offline": "接続されていません"
+  }
+}

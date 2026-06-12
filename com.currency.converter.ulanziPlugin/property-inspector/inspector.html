@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no">
+  <title>Currency Converter</title>
+  <link rel="stylesheet" href="../libs/css/udpi.css">
+  <style>
+    :root{
+      --accent:#2ecc71; --accent-soft:rgba(46,204,113,.12);
+      --line:rgba(255,255,255,.07); --label:#8b95a3;
+      --field-bg:#11161d; --field-border:#2a323d;
+    }
+    body{ padding-bottom:18px; }
+    .section{ margin:0; padding:14px 0 6px; border-top:1px solid var(--line); }
+    .section:first-of-type{ border-top:none; padding-top:6px; }
+    .section-title{ font-size:8pt; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--label); padding:0 18px 8px; }
+    input:focus, select:focus{ border-color:var(--accent)!important; outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
+    .row{ display:flex; align-items:center; min-height:36px; padding:3px 18px; }
+    .row .label{ flex:0 0 96px; text-align:left; padding-right:10px; font-size:9pt; color:#cdd4dd; }
+    .row .control{ flex:1; display:flex; align-items:center; gap:8px; }
+    select, input[type="number"]{ width:100%; background:var(--field-bg); border:1px solid var(--field-border); color:#e8edf2; border-radius:7px; padding:7px 9px; font-size:9pt; }
+    .swap-btn{ flex:0 0 38px; height:34px; border:1px solid var(--field-border); background:var(--field-bg); color:var(--accent); border-radius:7px; cursor:pointer; font-size:14pt; line-height:1; }
+    .swap-btn:hover{ border-color:var(--accent); }
+    .preview-wrap{ display:flex; justify-content:center; padding:10px 0 4px; }
+    .preview{ width:128px; height:128px; border-radius:14px; box-shadow:0 8px 22px rgba(0,0,0,.5),0 0 0 1px var(--line); overflow:hidden; }
+    .preview svg{ width:100%; height:100%; display:block; }
+    /* segmented */
+    .seg{ display:flex; gap:6px; padding:2px 18px 8px; }
+    .seg button{ flex:1; background:var(--field-bg); border:1px solid var(--field-border); color:#aeb6c0; border-radius:7px; padding:8px 4px; font-size:8.5pt; font-weight:600; cursor:pointer; }
+    .seg button.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+    /* theme swatches */
+    .themes{ display:flex; flex-wrap:wrap; gap:8px; padding:2px 18px 10px; }
+    .theme-swatch{ width:38px; height:26px; border-radius:7px; cursor:pointer; display:flex; overflow:hidden; border:2px solid transparent; }
+    .theme-swatch.active{ border-color:var(--accent); }
+    .theme-swatch i{ flex:1; }
+    /* switch */
+    .switch{ position:relative; display:inline-flex; align-items:center; cursor:pointer; }
+    .switch input{ position:absolute; opacity:0; width:0; height:0; }
+    .switch .track{ width:42px; height:24px; border-radius:13px; background:#2a323d; transition:.2s; position:relative; }
+    .switch .track::after{ content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:.2s; }
+    .switch input:checked + .track{ background:var(--accent); }
+    .switch input:checked + .track::after{ transform:translateX(18px); }
+    .switch-hint{ font-size:8.5pt; color:#7c8794; }
+    .btn-row{ display:flex; gap:10px; padding:8px 18px 2px; }
+    .act-btn{ flex:1; background:var(--field-bg); border:1px solid var(--field-border); color:#d6dde4; border-radius:8px; padding:10px; font-size:9pt; font-weight:600; cursor:pointer; }
+    .act-btn:hover{ border-color:var(--accent); color:var(--accent); }
+    .act-btn.primary{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+    .tip{ padding:10px 18px 0; color:#5b6470; font-size:8.5pt; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="udpi-wrapper hidden">
+    <form id="property-inspector">
+
+      <div class="preview-wrap"><div class="preview" id="preview"></div></div>
+
+      <!-- CONVERT -->
+      <div class="section">
+        <div class="section-title" data-localize>convert</div>
+        <div class="row">
+          <div class="label" data-localize>from</div>
+          <div class="control">
+            <select id="from" name="from"></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="label" data-localize>to</div>
+          <div class="control">
+            <select id="to" name="to"></select>
+            <button type="button" class="swap-btn" id="swap" title="swap">&#8645;</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="label" data-localize>amount</div>
+          <div class="control">
+            <input type="number" id="amount" name="amount" min="0" step="any" value="1">
+          </div>
+        </div>
+        <div class="row">
+          <div class="label" data-localize>decimals</div>
+          <div class="control">
+            <select id="decimals" name="decimals">
+              <option value="" data-localize>autoDec</option>
+              <option value="0">0</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFRESH -->
+      <div class="section">
+        <div class="section-title" data-localize>refresh</div>
+        <div class="row">
+          <div class="label" data-localize>interval</div>
+          <div class="control">
+            <input type="number" id="intervalMin" name="intervalMin" min="1" max="1440" step="1" value="60">
+            <span class="switch-hint" data-localize>minutes</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="act-btn primary" id="btn-refresh" data-localize>refreshNow</button>
+        </div>
+        <p class="tip" data-localize>tipPressKey</p>
+      </div>
+
+      <!-- APPEARANCE -->
+      <div class="section">
+        <div class="section-title" data-localize>screen</div>
+        <input type="hidden" id="screenMode" name="screenMode" value="0">
+        <div class="seg" id="screen-seg">
+          <button type="button" data-mode="0" data-localize>scrClassic</button>
+          <button type="button" data-mode="1" data-localize>scrChart</button>
+          <button type="button" data-mode="2" data-localize>scrMinimal</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title" data-localize>theme</div>
+        <input type="hidden" id="theme" name="theme" value="emerald">
+        <div class="themes" id="theme-swatches"></div>
+        <div class="row">
+          <div class="label" data-localize>font</div>
+          <div class="control">
+            <select id="font" name="font">
+              <option value="sans">Sans</option>
+              <option value="mono">Mono</option>
+              <option value="serif">Serif</option>
+              <option value="display">Display</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="label" data-localize>animated</div>
+          <div class="control">
+            <label class="switch">
+              <input type="checkbox" id="anim" name="anim" value="true" checked>
+              <span class="track"></span>
+            </label>
+            <span class="switch-hint" data-localize>animatedHint</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="act-btn" id="btn-tutorial" data-localize>tutorial</button>
+      </div>
+
+    </form>
+  </div>
+
+  <script src="../libs/js/constants.js"></script>
+  <script src="../libs/js/eventEmitter.js"></script>
+  <script src="../libs/js/timers.js"></script>
+  <script src="../libs/js/utils.js"></script>
+  <script src="../libs/js/ulanzideckApi.js"></script>
+  <script src="./inspector.js"></script>
+</body>
+</html>
