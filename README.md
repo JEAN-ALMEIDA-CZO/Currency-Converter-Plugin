@@ -8,7 +8,7 @@
 
 Pick two currencies, set an amount, and the key shows the converted value with the live rate, a trend arrow and a mini chart. Press the key to invert the conversion.
 
-![version](https://img.shields.io/badge/version-1.0.0-34d399)
+![version](https://img.shields.io/badge/version-1.0.1-34d399)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-06140d)
 ![langs](https://img.shields.io/badge/i18n-11%20languages-3fb950)
 ![license](https://img.shields.io/badge/license-MIT-a78bfa)
@@ -55,7 +55,6 @@ One action, one key. The value is shown **big and centered**, with the live rate
 | **Refresh now** | Forces an immediate update. |
 | **Screen** | Classic · Chart · Minimal. |
 | **Theme / Font** | Color palette and typeface. |
-| **Animated** | Optional moving accent glow (off by default to save CPU). |
 
 The footer shows the **last local check time** (`upd HH:MM`) and a pulsing **"updating…"** cue while fetching.
 
