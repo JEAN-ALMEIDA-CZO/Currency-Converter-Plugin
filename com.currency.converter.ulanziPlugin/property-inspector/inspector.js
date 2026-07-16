@@ -93,7 +93,7 @@ $UD.onConnected(() => {
 
   const deb = Utils.debounce(() => { collectAndSend(); renderPreview(); }, 200);
   form.addEventListener('input', deb);
-  ['from', 'to', 'amount', 'decimals', 'intervalMin', 'font', 'anim'].forEach(id => {
+  ['from', 'to', 'amount', 'decimals', 'intervalMin', 'font'].forEach(id => {
     const el = document.getElementById(id); if (el) el.addEventListener('change', () => { collectAndSend(); renderPreview(); });
   });
 
@@ -154,7 +154,8 @@ const pv = { frame: 0, active: false };
 let pvTimer = null;
 // only advance/redraw when something actually animates (anim glow or a marquee);
 // otherwise the preview is static and the timer does nothing but a cheap flag check.
-function startPreview() { if (pvTimer) clearInterval(pvTimer); pvTimer = setInterval(() => { if (!pv.active) return; pv.frame++; renderPreview(); }, 200); renderPreview(); }
+// live preview removed (caused flicker + extra CPU while editing the key)
+function startPreview() {}
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function fmtNum(v, d) { const dd = d == null ? (v >= 1000 ? 0 : v >= 1 ? 2 : 4) : d; const [i, f] = v.toFixed(dd).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, ','); return f ? g + '.' + f : g; }
 function demoRate(from, to) { // stable pseudo rate just for the preview
@@ -271,7 +272,6 @@ function collectAndSend() {
   if (!form) return;
   const v = Utils.getFormValue(form);
   ACTION_SETTING = { ...ACTION_SETTING, ...v };
-  ACTION_SETTING.anim = !!document.getElementById('anim').checked;
   $UD.sendParamFromPlugin({ ...ACTION_SETTING, ...KEY_LABELS });
 }
 
@@ -285,7 +285,6 @@ function applySettings(p) {
   document.getElementById('theme').value = ACTION_SETTING.theme || 'emerald';
   document.getElementById('font').value = ACTION_SETTING.font || 'sans';
   document.getElementById('screenMode').value = ACTION_SETTING.screenMode != null ? ACTION_SETTING.screenMode : 0;
-  document.getElementById('anim').checked = !(ACTION_SETTING.anim === false || ACTION_SETTING.anim === 'false');
   highlightTheme(document.getElementById('theme').value);
   highlightSeg(document.getElementById('screenMode').value);
   renderPreview();

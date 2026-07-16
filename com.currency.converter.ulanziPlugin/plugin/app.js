@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import opentype from 'opentype.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PLUGIN_VERSION = '1.0.0';
+const PLUGIN_VERSION = '1.0.1';
 const DEBUG = process.env.CURRENCY_DEBUG === '1';
 
 function log(...a) { if (DEBUG) console.log('[Currency]', ...a); }
@@ -207,13 +207,6 @@ function generateSVG(o) {
   const L = o.labels || {};
 
   let defs = '', body = '';
-  // animated theme: soft moving accent glow sweeping across the top
-  if (o.anim) {
-    const gx = (128 + Math.sin(af * 0.05) * 90).toFixed(1);
-    defs += `<radialGradient id="sweep" cx="0.5" cy="0.5" r="0.5" gradientUnits="userSpaceOnUse" gradientTransform="translate(${gx} 70)" >` +
-            `<stop offset="0" stop-color="${t.accent}" stop-opacity="0.18"/><stop offset="1" stop-color="${t.accent}" stop-opacity="0"/></radialGradient>`;
-    body += `<circle cx="${gx}" cy="70" r="150" fill="url(#sweep)"/>`;
-  }
 
   // header: amount + FROM → TO  (compact arrow so it never overflows)
   const amt = (o.amount != null && o.amount !== 1) ? `${fmtNum(o.amount, o.amount >= 1000 ? 0 : 2)} ` : '';
@@ -255,16 +248,13 @@ function generateSVG(o) {
     if (pctStr) body += `<text x="128" y="210" text-anchor="middle" fill="${dirColor}" font-size="24" font-weight="bold" font-family="Arial, Helvetica, sans-serif">${arrow} ${esc(pctStr)}</text>`;
   }
 
-  // footer: last update time (all modes)
-  // footer: "updating…" while fetching, else "upd HH:MM" (last local check)
-  if (o.loading && o.rate != null) {
-    const pulse = (0.45 + 0.55 * Math.abs(Math.sin(af * 0.4))).toFixed(2);
-    body += `<circle cx="92" cy="237" r="5" fill="${t.accent}" opacity="${pulse}"/>`;
-    body += `<text x="106" y="244" text-anchor="start" fill="${t.accent}" font-size="20" font-family="Arial, Helvetica, sans-serif">${esc(L.loading || 'updating…')}</text>`;
-  } else if (o.updated) {
+  // footer: last local check time — stays put (no "updating…" swap) so a refresh
+  // never blinks the key. A tiny dot marks in-flight; a red dot marks an error.
+  if (o.updated) {
     body += `<text x="128" y="244" text-anchor="middle" fill="${t.muted}" font-size="20" font-family="Arial, Helvetica, sans-serif" opacity="0.85">${esc((L.updated || 'upd') + ' ' + o.updated)}</text>`;
   }
-  if (o.error && o.rate != null) body += `<circle cx="238" cy="18" r="5" fill="${t.down}"/>`;
+  if (o.loading && o.rate != null) body += `<circle cx="238" cy="18" r="4" fill="${t.accent}" opacity="0.9"/>`;
+  else if (o.error && o.rate != null) body += `<circle cx="238" cy="18" r="4" fill="${t.down}"/>`;
 
   return wrap(t, defs, body);
 }
@@ -292,19 +282,36 @@ function httpGet(url, timeoutMs = 9000) {
 const _rateCache = new Map();    // base -> { ts, rates }
 const _rateInflight = new Map(); // base -> Promise<{rates}>
 const RATE_TTL = 60 * 1000;
+// primary: open.er-api.com (uppercase-keyed rates)
+function fetchPrimary(base) {
+  return httpGet(`https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`).then((raw) => {
+    const j = JSON.parse(raw);
+    if (j.result !== 'success' || !j.rates) throw new Error('primary: no rates');
+    return j.rates;
+  });
+}
+// fallback: jsDelivr currency-api (@fawazahmed0) — works where the primary is
+// blocked/unreachable (e.g. some restricted networks). Lowercase codes → normalize
+// to the same UPPERCASE shape the rest of the code expects.
+function fetchFallback(base) {
+  const b = base.toLowerCase();
+  return httpGet(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${encodeURIComponent(b)}.json`).then((raw) => {
+    const j = JSON.parse(raw);
+    const m = j[b];
+    if (!m) throw new Error('fallback: no rates');
+    const out = {};
+    for (const k in m) out[k.toUpperCase()] = m[k];
+    return out;
+  });
+}
 function getRates(base) {
   const c = _rateCache.get(base);
   if (c && Date.now() - c.ts < RATE_TTL) return Promise.resolve(c);
   const pending = _rateInflight.get(base);
   if (pending) return pending;
-  const p = httpGet(`https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`)
-    .then((raw) => {
-      const j = JSON.parse(raw);
-      if (j.result !== 'success' || !j.rates) throw new Error('no rates');
-      const entry = { ts: Date.now(), rates: j.rates };
-      _rateCache.set(base, entry);
-      return entry;
-    })
+  const p = fetchPrimary(base)
+    .catch((e) => { log('rate primary fail, trying fallback:', e.message); return fetchFallback(base); })
+    .then((rates) => { const entry = { ts: Date.now(), rates }; _rateCache.set(base, entry); return entry; })
     .finally(() => { _rateInflight.delete(base); });
   _rateInflight.set(base, p);
   return p;
@@ -328,14 +335,16 @@ function saveSamplesStore() {
 // Empty set => no timer at all (zero idle CPU).
 const _animSet = new Set();
 let _animTimer = null;
-function animJoin(inst) {
-  _animSet.add(inst);
-  if (!_animTimer) _animTimer = setInterval(() => { for (const it of _animSet) { it.animFrame++; it.render(); } }, 200);
+let _addSeq = 0; // staggers each new key's first fetch (see constructor)
+// fewer frames per second as more keys animate at once — keeps total render load
+// roughly flat no matter how many keys are on the deck.
+function _animInterval() { const n = _animSet.size; return n <= 2 ? 200 : n <= 4 ? 300 : 450; }
+function _animRestart() {
+  if (_animTimer) { clearInterval(_animTimer); _animTimer = null; }
+  if (_animSet.size) _animTimer = setInterval(() => { for (const it of _animSet) { it.animFrame++; it.render(); } }, _animInterval());
 }
-function animLeave(inst) {
-  _animSet.delete(inst);
-  if (_animSet.size === 0 && _animTimer) { clearInterval(_animTimer); _animTimer = null; }
-}
+function animJoin(inst) { _animSet.add(inst); _animRestart(); }
+function animLeave(inst) { _animSet.delete(inst); _animRestart(); }
 
 // ── Converter instance ──────────────────────────────────────────────────────────
 class Converter {
@@ -343,20 +352,25 @@ class Converter {
     this.$UD = $UD; this.context = context;
     this.config = {
       from: 'USD', to: 'BRL', amount: 1, decimals: null,
-      intervalMin: 60, theme: 'emerald', font: 'sans', screenMode: 0, anim: false,
+      intervalMin: 60, theme: 'emerald', font: 'sans', screenMode: 0,
       labels: {}
     };
     this.rate = null; this.prevRate = null; this.dir = 'flat'; this.changePct = null;
     this.samples = []; this.updated = ''; this.error = false; this.loading = false;
     this.animFrame = 0; this.refreshTimer = null;
+    this._lastCfg = Date.now(); // last editor/config activity (guards swap-on-press)
     this._allSamples = samplesStore(); // shared store (one copy for all keys)
     this.render();
     this._startAnim();
-    this.refresh();
+    // stagger the first fetch/render so dragging several keys at once doesn't
+    // fire a synchronous burst of network + glyph work (what made key #6 lag).
+    const slot = Math.min(_addSeq++, 12);
+    this.refreshTimer = setTimeout(() => this.refresh(), slot * 180);
   }
 
   setConfig(p) {
     if (!p) return;
+    this._lastCfg = Date.now(); // editor/config touch → block an immediate swap
     if (p.forceRefresh) { this.refresh(); return; }
     const pairBefore = this.config.from + this.config.to;
     if (p.from) this.config.from = p.from.toUpperCase();
@@ -367,7 +381,6 @@ class Converter {
     if (p.theme) this.config.theme = p.theme;
     if (p.font) this.config.font = p.font;
     if (p.screenMode !== undefined) this.config.screenMode = parseInt(p.screenMode, 10) || 0;
-    if (p.anim !== undefined) this.config.anim = (p.anim === true || p.anim === 'true' || p.anim === 'on');
     const labelKeys = ['loading', 'updated', 'offline'];
     this.config.labels = this.config.labels || {};
     for (const k of labelKeys) if (p[k]) this.config.labels[k] = p[k];
@@ -383,33 +396,32 @@ class Converter {
     }
   }
 
-  // key press: invert the conversion (FROM ↔ TO) and re-fetch
+  // physical key press: invert the conversion (FROM ↔ TO) and re-fetch.
+  // Two guards keep it to *deliberate* presses only:
+  //  - editor guard: a run that lands right after add/config/activate is almost
+  //    certainly placement/move noise from the editor, not a real press → ignore.
+  //  - debounce: never flip twice within 900ms.
   swap() {
+    const now = Date.now();
+    if (this._lastCfg && now - this._lastCfg < 700) return;      // editor move/placement noise
+    if (this._lastSwap && now - this._lastSwap < 900) return;    // debounce bursts
+    this._lastSwap = now;
     const f = this.config.from;
     this.config.from = this.config.to;
     this.config.to = f;
-    this.rate = null; this.prevRate = null; this.dir = 'flat'; this.changePct = null;
+    // instant inverse (cross-rate 1/r is exact) — no blanking, no reload, no blink.
+    this.rate = (this.rate && this.rate > 0) ? 1 / this.rate : this.rate;
+    this.prevRate = null; this.dir = 'flat'; this.changePct = null;
     this.samples = (this._allSamples[this.config.from + this.config.to] || []).slice(-40);
-    this._persist(); // save the swap to deck storage (survives restart) + sync PI dropdowns
+    // NOTE: runtime-only. We deliberately do NOT persist here — pushing the swapped
+    // pair back to the deck made it fight the deck's own settings push and flip
+    // endlessly. The next scheduled refresh keeps the value exact.
     this.render();
-    this.refresh();
-  }
-
-  // push the full settings via PARAMFROMPLUGIN — the same event the inspector uses
-  // to save, so the deck persists it and the PI dropdowns stay in sync.
-  _persist() {
-    const c = this.config;
-    const payload = {
-      from: c.from, to: c.to, amount: c.amount, decimals: c.decimals,
-      intervalMin: c.intervalMin, theme: c.theme, font: c.font,
-      screenMode: c.screenMode, anim: c.anim, ...(c.labels || {})
-    };
-    try { this.$UD.sendParamFromPlugin(payload, this.context); } catch (e) {}
   }
 
   async refresh() {
     if (this.loading) return;
-    this.loading = true; this.render(); this._startAnim(); // show + animate "updating…" cue
+    this.loading = true; this.render(); // paint the static "updating…" cue once
     const { from, to } = this.config;
     try {
       if (from === to) { this._apply(1); }
@@ -467,19 +479,27 @@ class Converter {
     const minS = Math.round(60 * 0.6);               // matches bigText's minimum
     return textWidth(f, str, minS) > 234;
   }
-  // join/leave the single shared 5fps ticker (one timer total, all keys)
+  // join/leave the single shared ticker (one timer total, all keys). Only the
+  // animated theme or an overflowing marquee need motion — the "updating…" cue is
+  // static, so a plain refresh never spins the CPU.
   _startAnim() {
-    if (this.config.anim || this.loading || this._needsMarquee()) animJoin(this);
+    if (this._needsMarquee()) animJoin(this);
     else animLeave(this);
   }
 
+  // coalesce: several state changes in the same tick (constructor + refresh +
+  // setConfig) would each build an SVG; batch them into one paint per tick.
   render() {
+    if (this._flushT) return;
+    this._flushT = setImmediate(() => { this._flushT = null; this._renderNow(); });
+  }
+  _renderNow() {
     try {
       const svg = generateSVG({
         from: this.config.from, to: this.config.to, amount: this.config.amount, decimals: this.config.decimals,
         rate: this.rate, dir: this.dir, changePct: this.changePct, samples: this.samples,
         theme: this.config.theme, font: this.config.font, screenMode: this.config.screenMode,
-        anim: this.config.anim, animFrame: this.animFrame, updated: this.updated,
+        animFrame: this.animFrame, updated: this.updated,
         loading: this.loading, error: this.error, labels: this.config.labels
       });
       if (svg === this._lastSvg) return; // skip redundant WS sends (no visual change)
@@ -490,6 +510,7 @@ class Converter {
 
   destroy() {
     animLeave(this);
+    if (this._flushT) { clearImmediate(this._flushT); this._flushT = null; }
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
   }
 }
@@ -501,13 +522,32 @@ $UD.connect('com.currency.converter.deck');
 $UD.onConnected(() => log('connected v' + PLUGIN_VERSION));
 $UD.onError((e) => log('err', typeof e === 'string' ? e : ''));
 
+// one live instance per action. Moving a key changes its context (position), so
+// without this the old instance survives and both render to the same key → blink.
+function dropStaleFor(ctx) {
+  let actionid;
+  try { actionid = $UD.decodeContext(ctx).actionid; } catch (e) { return; }
+  if (!actionid) return;
+  for (const k of Object.keys(CACHE)) {
+    if (k === ctx) continue;
+    let a; try { a = $UD.decodeContext(k).actionid; } catch (e) { continue; }
+    if (a === actionid) { CACHE[k].destroy(); delete CACHE[k]; }
+  }
+}
 $UD.onAdd((jsn) => {
   const ctx = jsn.context;
+  dropStaleFor(ctx); // clear a previous placement of this same action (moved key)
   if (!CACHE[ctx]) CACHE[ctx] = new Converter(ctx, $UD);
+  CACHE[ctx]._lastCfg = Date.now(); // (re)placement → block an immediate swap
   if (jsn.param) CACHE[ctx].setConfig(jsn.param);
 });
 $UD.onParamFromApp((jsn) => { const i = CACHE[jsn.context]; if (i && jsn.param) i.setConfig(jsn.param); });
 $UD.onParamFromPlugin((jsn) => { const i = CACHE[jsn.context]; if (i && jsn.param) i.setConfig(jsn.param); });
-$UD.onRun((jsn) => { const ctx = jsn.context; if (!CACHE[ctx]) CACHE[ctx] = new Converter(ctx, $UD); CACHE[ctx].swap(); });
-$UD.onSetActive((jsn) => { const i = CACHE[jsn.context]; if (i) i.render(); });
+// physical key press → invert the pair (guarded inside swap() so editor
+// move/placement run-events don't flip it). Inverting also works from the
+// property inspector's ⇅ swap button.
+$UD.onRun((jsn) => { const ctx = jsn.context; if (!CACHE[ctx]) { dropStaleFor(ctx); CACHE[ctx] = new Converter(ctx, $UD); } CACHE[ctx].swap(); });
+// setActive fires when a key (re)appears — e.g. page switch or editor move — so
+// treat it as editor activity that blocks an immediate swap.
+$UD.onSetActive((jsn) => { const i = CACHE[jsn.context]; if (i) { i._lastCfg = Date.now(); i.render(); } });
 $UD.onClear((jsn) => { if (!jsn.param) return; for (const it of jsn.param) { const i = CACHE[it.context]; if (i) { i.destroy(); delete CACHE[it.context]; } } });
