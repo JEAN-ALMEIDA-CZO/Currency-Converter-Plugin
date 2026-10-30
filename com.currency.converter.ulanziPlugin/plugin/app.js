@@ -326,7 +326,7 @@ class Converter {
     this.$UD = $UD; this.context = context;
     this.config = {
       from: 'USD', to: 'BRL', amount: 1, decimals: null,
-      intervalMin: 60, theme: 'emerald', font: 'sans', screenMode: 0,
+      intervalMin: 15, theme: 'emerald', font: 'sans', screenMode: 0,
       labels: {}
     };
     this.rate = null; this.prevRate = null; this.dir = 'flat'; this.changePct = null;
@@ -412,14 +412,16 @@ class Converter {
   }
 
   _apply(rate, dataTs) {
-    this.prevRate = this.rate;
+    const key = this.config.from + this.config.to;
+    const arr = this._allSamples[key] || [];
+    // first fetch for this pair: compare against the last stored sample so the
+    // arrow is meaningful right away instead of waiting for a second refresh.
+    this.prevRate = this.rate != null ? this.rate : (arr.length ? arr[arr.length - 1] : null);
     this.rate = rate;
     if (this.prevRate != null) {
       this.dir = rate > this.prevRate ? 'up' : rate < this.prevRate ? 'down' : 'flat';
       this.changePct = this.prevRate ? ((rate - this.prevRate) / this.prevRate) * 100 : 0;
     }
-    const key = this.config.from + this.config.to;
-    const arr = this._allSamples[key] || [];
     arr.push(rate); while (arr.length > 60) arr.shift();
     this._allSamples[key] = arr; this.samples = arr.slice(-40);
     saveSamplesStore();
