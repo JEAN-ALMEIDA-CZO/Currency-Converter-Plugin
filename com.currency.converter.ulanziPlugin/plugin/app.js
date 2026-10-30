@@ -36,7 +36,7 @@ const THEMES = {
   sand:    { bg: '#fbf6ec', up: '#2f855a', down: '#c53030', track: '#ece1cd', text: '#3b2f1e', muted: '#8a7a5f', accent: '#c05621' }
 };
 
-// ── currency table (code, name, symbol) — vast list, all on open.er-api ─────────
+// ── currency table (code, name, symbol) — 166 codes offered by the UI ───────────
 const CURRENCIES = [
   ['USD','US Dollar','$'],['EUR','Euro','€'],['GBP','British Pound','£'],['JPY','Japanese Yen','¥'],
   ['CNY','Chinese Yuan','¥'],['CHF','Swiss Franc','Fr'],['CAD','Canadian Dollar','$'],['AUD','Australian Dollar','$'],

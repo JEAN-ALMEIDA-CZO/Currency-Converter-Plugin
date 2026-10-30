@@ -22,10 +22,17 @@ public data source. Each is the property of its respective authors.
 
 ## Exchange-rate data
 
-Live rates are fetched from the **ExchangeRate-API open endpoint**
-(`https://open.er-api.com`), which is free and requires no API key. Rates are
-read-only; no personal data is sent. See https://www.exchangerate-api.com/terms
-for their terms. No other external service is used; there is no telemetry.
+Rates come from three free, keyless endpoints, tried in order (`plugin/rates.js`):
+
+| Source | Endpoint | Refresh |
+|--------|----------|---------|
+| AwesomeAPI | `economia.awesomeapi.com.br` | ~30 s |
+| Coinbase | `api.coinbase.com/v2/exchange-rates` | near real-time |
+| currency-api (MIT) | `cdn.jsdelivr.net/npm/@fawazahmed0/currency-api` | daily |
+
+Requests are read-only; no personal data and no API key are sent. There is no
+telemetry. The footer shows the timestamp published by the provider, so daily
+data is visibly labelled as such.
 
 ---
 

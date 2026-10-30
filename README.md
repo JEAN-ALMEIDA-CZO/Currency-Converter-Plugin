@@ -56,7 +56,8 @@ One action, one key. The value is shown **big and centered**, with the live rate
 | **Screen** | Classic · Chart · Minimal. |
 | **Theme / Font** | Color palette and typeface. |
 
-The footer shows the **last local check time** (`upd HH:MM`) and a pulsing **"updating…"** cue while fetching.
+The footer shows **when the rate was published** (`upd HH:MM`, or `upd DD/MM HH:MM`
+when the data is not from today) and a pulsing **"updating…"** cue while fetching.
 
 ---
 
@@ -68,7 +69,9 @@ Designed so you can fill the deck without weighing on the CPU:
 - **Single animation ticker** — one 5 fps timer drives every key that needs motion; a still key has **no timer at all** (zero idle CPU).
 - **Glyph / width caching** + **redundant-send dedup** — marquee frames are nearly free and identical frames are never re-pushed to the deck.
 
-> The free API refreshes rates roughly once a day, so the converted value can stay the same between checks — the footer time still updates to confirm the key polled.
+> Rates come from keyless sources that update continuously (AwesomeAPI ~30 s,
+> Coinbase near real-time) with a daily fallback for exotic currencies. If a pair
+> falls through to the daily source, the footer shows its date instead of a time.
 
 ---
 
@@ -90,7 +93,9 @@ Designed so you can fill the deck without weighing on the CPU:
 ```
 com.currency.converter.ulanziPlugin/
 ├── manifest.json            # 1 action (Keypad)
-├── plugin/app.js            # backend: fetch + render + cache
+├── plugin/app.js            # backend: render + shared rate cache
+├── plugin/rates.js          # rate source chain (AwesomeAPI → Coinbase → daily)
+├── plugin/clock.js          # footer label for the rate's publish time
 ├── property-inspector/
 │   ├── inspector.html/js    # settings panel + live preview
 │   └── tutorial.html        # step-by-step guide (11 langs)
@@ -105,8 +110,8 @@ com.currency.converter.ulanziPlugin/
 
 ## 🛠️ Tech
 
-- **Data:** [open.er-api.com](https://open.er-api.com) (free, no key). **Currency names:** native `Intl.DisplayNames` per locale. **Text:** vector glyphs via `opentype.js`.
-- **No telemetry**, no accounts — the only request is the public exchange-rate endpoint over HTTPS.
+- **Data:** [AwesomeAPI](https://economia.awesomeapi.com.br), [Coinbase](https://api.coinbase.com) and [currency-api](https://github.com/fawazahmed0/exchange-api) (all free, no key), tried in that order. **Currency names:** native `Intl.DisplayNames` per locale. **Text:** vector glyphs via `opentype.js`.
+- **No telemetry**, no accounts — the only requests are to the public exchange-rate endpoints over HTTPS.
 - Performance: shared rate fetches, one shared animation timer, glyph caching and identical-frame dedup.
 
 ---
