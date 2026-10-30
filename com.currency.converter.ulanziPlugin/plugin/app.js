@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import opentype from 'opentype.js';
 import { fetchRate } from './rates.js';
+import { clockLabel } from './clock.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_VERSION = '1.0.1';
@@ -248,8 +249,8 @@ function generateSVG(o) {
     if (pctStr) body += `<text x="128" y="210" text-anchor="middle" fill="${dirColor}" font-size="24" font-weight="bold" font-family="Arial, Helvetica, sans-serif">${arrow} ${esc(pctStr)}</text>`;
   }
 
-  // footer: last local check time — stays put (no "updating…" swap) so a refresh
-  // never blinks the key. A tiny dot marks in-flight; a red dot marks an error.
+  // footer: when the rate was published — stays put (no "updating…" swap) so a
+  // refresh never blinks the key. A tiny dot marks in-flight; a red dot an error.
   if (o.updated) {
     body += `<text x="128" y="244" text-anchor="middle" fill="${t.muted}" font-size="20" font-family="Arial, Helvetica, sans-serif" opacity="0.85">${esc((L.updated || 'upd') + ' ' + o.updated)}</text>`;
   }
@@ -400,7 +401,7 @@ class Converter {
       if (from === to) { this._apply(1); }
       else {
         const entry = await getRate(from, to); // coalesced across all keys
-        this._apply(entry.rate);
+        this._apply(entry.rate, entry.dataTs);
       }
       this.error = false;
     } catch (e) {
@@ -410,7 +411,7 @@ class Converter {
     }
   }
 
-  _apply(rate) {
+  _apply(rate, dataTs) {
     this.prevRate = this.rate;
     this.rate = rate;
     if (this.prevRate != null) {
@@ -422,10 +423,9 @@ class Converter {
     arr.push(rate); while (arr.length > 60) arr.shift();
     this._allSamples[key] = arr; this.samples = arr.slice(-40);
     saveSamplesStore();
-    // footer shows our last successful CHECK time (local now); the free API only
-    // refreshes rates ~once a day, so its time_last_update would look frozen.
-    const d = new Date();
-    this.updated = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    // footer shows when the RATE was published (from the provider payload), not
+    // when we last asked. A daily source therefore shows its date.
+    this.updated = clockLabel(dataTs || Date.now());
   }
 
   _scheduleRefresh() {
