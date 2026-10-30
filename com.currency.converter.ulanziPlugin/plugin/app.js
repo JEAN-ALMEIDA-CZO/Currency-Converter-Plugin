@@ -1,10 +1,10 @@
 import UlanzideckApi from '../libs/node/ulanzideckApi.js';
-import https from 'https';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import opentype from 'opentype.js';
+import { fetchRate } from './rates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_VERSION = '1.0.1';
@@ -263,57 +263,30 @@ function wrap(t, defs, body) {
   return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 }
 
-// ── HTTPS get with timeout ──────────────────────────────────────────────────────
-function httpGet(url, timeoutMs = 9000) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'UlanziCurrencyConverter/1.0' } }, (r) => {
-      if (r.statusCode < 200 || r.statusCode >= 300) { r.resume(); return reject(new Error('HTTP ' + r.statusCode)); }
-      let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
-    });
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => { req.destroy(new Error('timeout')); });
-  });
-}
-
 // ── shared FX rate cache ─────────────────────────────────────────────────────────
-// Every key on the same base currency shares ONE network fetch + parse instead of
-// N. A fetched table is reused for 60s, and concurrent requests are coalesced, so
-// 20 keys cost the same as 1.
-const _rateCache = new Map();    // base -> { ts, rates }
-const _rateInflight = new Map(); // base -> Promise<{rates}>
+// Every key on the same pair shares ONE network fetch + parse instead of N. A
+// fetched rate is reused for 60s and concurrent requests are coalesced, so 20
+// keys on USD→BRL cost the same as 1. The source chain lives in rates.js:
+// AwesomeAPI (near-live) → Coinbase (near-live) → currency-api (daily).
+const _rateCache = new Map();    // "USDBRL" -> { ts, rate, dataTs, source, label }
+const _rateInflight = new Map(); // "USDBRL" -> Promise<entry>
 const RATE_TTL = 60 * 1000;
-// primary: open.er-api.com (uppercase-keyed rates)
-function fetchPrimary(base) {
-  return httpGet(`https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`).then((raw) => {
-    const j = JSON.parse(raw);
-    if (j.result !== 'success' || !j.rates) throw new Error('primary: no rates');
-    return j.rates;
-  });
-}
-// fallback: jsDelivr currency-api (@fawazahmed0) — works where the primary is
-// blocked/unreachable (e.g. some restricted networks). Lowercase codes → normalize
-// to the same UPPERCASE shape the rest of the code expects.
-function fetchFallback(base) {
-  const b = base.toLowerCase();
-  return httpGet(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${encodeURIComponent(b)}.json`).then((raw) => {
-    const j = JSON.parse(raw);
-    const m = j[b];
-    if (!m) throw new Error('fallback: no rates');
-    const out = {};
-    for (const k in m) out[k.toUpperCase()] = m[k];
-    return out;
-  });
-}
-function getRates(base) {
-  const c = _rateCache.get(base);
+
+function getRate(base, quote) {
+  const key = base + quote;
+  const c = _rateCache.get(key);
   if (c && Date.now() - c.ts < RATE_TTL) return Promise.resolve(c);
-  const pending = _rateInflight.get(base);
+  const pending = _rateInflight.get(key);
   if (pending) return pending;
-  const p = fetchPrimary(base)
-    .catch((e) => { log('rate primary fail, trying fallback:', e.message); return fetchFallback(base); })
-    .then((rates) => { const entry = { ts: Date.now(), rates }; _rateCache.set(base, entry); return entry; })
-    .finally(() => { _rateInflight.delete(base); });
-  _rateInflight.set(base, p);
+  const p = fetchRate(base, quote)
+    .then((r) => {
+      const entry = { ts: Date.now(), rate: r.rate, dataTs: r.ts, source: r.source, label: r.label };
+      _rateCache.set(key, entry);
+      log('rate', key, entry.rate, 'via', entry.source);
+      return entry;
+    })
+    .finally(() => { _rateInflight.delete(key); });
+  _rateInflight.set(key, p);
   return p;
 }
 
@@ -426,9 +399,8 @@ class Converter {
     try {
       if (from === to) { this._apply(1); }
       else {
-        const { rates } = await getRates(from); // coalesced across all keys
-        if (rates[to] == null) throw new Error('no rate');
-        this._apply(rates[to]);
+        const entry = await getRate(from, to); // coalesced across all keys
+        this._apply(entry.rate);
       }
       this.error = false;
     } catch (e) {
