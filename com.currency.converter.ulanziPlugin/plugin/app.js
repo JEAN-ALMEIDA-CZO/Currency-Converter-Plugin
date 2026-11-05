@@ -1,10 +1,11 @@
 import UlanzideckApi from '../libs/node/ulanzideckApi.js';
-import https from 'https';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import opentype from 'opentype.js';
+import { fetchRate, retryDelayMs } from './rates.js';
+import { clockLabel } from './clock.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_VERSION = '1.0.1';
@@ -35,7 +36,7 @@ const THEMES = {
   sand:    { bg: '#fbf6ec', up: '#2f855a', down: '#c53030', track: '#ece1cd', text: '#3b2f1e', muted: '#8a7a5f', accent: '#c05621' }
 };
 
-// ── currency table (code, name, symbol) — vast list, all on open.er-api ─────────
+// ── currency table (code, name, symbol) — 166 codes offered by the UI ───────────
 const CURRENCIES = [
   ['USD','US Dollar','$'],['EUR','Euro','€'],['GBP','British Pound','£'],['JPY','Japanese Yen','¥'],
   ['CNY','Chinese Yuan','¥'],['CHF','Swiss Franc','Fr'],['CAD','Canadian Dollar','$'],['AUD','Australian Dollar','$'],
@@ -248,8 +249,8 @@ function generateSVG(o) {
     if (pctStr) body += `<text x="128" y="210" text-anchor="middle" fill="${dirColor}" font-size="24" font-weight="bold" font-family="Arial, Helvetica, sans-serif">${arrow} ${esc(pctStr)}</text>`;
   }
 
-  // footer: last local check time — stays put (no "updating…" swap) so a refresh
-  // never blinks the key. A tiny dot marks in-flight; a red dot marks an error.
+  // footer: when the rate was published — stays put (no "updating…" swap) so a
+  // refresh never blinks the key. A tiny dot marks in-flight; a red dot an error.
   if (o.updated) {
     body += `<text x="128" y="244" text-anchor="middle" fill="${t.muted}" font-size="20" font-family="Arial, Helvetica, sans-serif" opacity="0.85">${esc((L.updated || 'upd') + ' ' + o.updated)}</text>`;
   }
@@ -263,57 +264,30 @@ function wrap(t, defs, body) {
   return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 }
 
-// ── HTTPS get with timeout ──────────────────────────────────────────────────────
-function httpGet(url, timeoutMs = 9000) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'UlanziCurrencyConverter/1.0' } }, (r) => {
-      if (r.statusCode < 200 || r.statusCode >= 300) { r.resume(); return reject(new Error('HTTP ' + r.statusCode)); }
-      let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
-    });
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => { req.destroy(new Error('timeout')); });
-  });
-}
-
 // ── shared FX rate cache ─────────────────────────────────────────────────────────
-// Every key on the same base currency shares ONE network fetch + parse instead of
-// N. A fetched table is reused for 60s, and concurrent requests are coalesced, so
-// 20 keys cost the same as 1.
-const _rateCache = new Map();    // base -> { ts, rates }
-const _rateInflight = new Map(); // base -> Promise<{rates}>
+// Every key on the same pair shares ONE network fetch + parse instead of N. A
+// fetched rate is reused for 60s and concurrent requests are coalesced, so 20
+// keys on USD→BRL cost the same as 1. The source chain lives in rates.js:
+// AwesomeAPI (near-live) → Coinbase (near-live) → currency-api (daily).
+const _rateCache = new Map();    // "USDBRL" -> { ts, rate, dataTs, source, label }
+const _rateInflight = new Map(); // "USDBRL" -> Promise<entry>
 const RATE_TTL = 60 * 1000;
-// primary: open.er-api.com (uppercase-keyed rates)
-function fetchPrimary(base) {
-  return httpGet(`https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`).then((raw) => {
-    const j = JSON.parse(raw);
-    if (j.result !== 'success' || !j.rates) throw new Error('primary: no rates');
-    return j.rates;
-  });
-}
-// fallback: jsDelivr currency-api (@fawazahmed0) — works where the primary is
-// blocked/unreachable (e.g. some restricted networks). Lowercase codes → normalize
-// to the same UPPERCASE shape the rest of the code expects.
-function fetchFallback(base) {
-  const b = base.toLowerCase();
-  return httpGet(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${encodeURIComponent(b)}.json`).then((raw) => {
-    const j = JSON.parse(raw);
-    const m = j[b];
-    if (!m) throw new Error('fallback: no rates');
-    const out = {};
-    for (const k in m) out[k.toUpperCase()] = m[k];
-    return out;
-  });
-}
-function getRates(base) {
-  const c = _rateCache.get(base);
+
+function getRate(base, quote) {
+  const key = base + quote;
+  const c = _rateCache.get(key);
   if (c && Date.now() - c.ts < RATE_TTL) return Promise.resolve(c);
-  const pending = _rateInflight.get(base);
+  const pending = _rateInflight.get(key);
   if (pending) return pending;
-  const p = fetchPrimary(base)
-    .catch((e) => { log('rate primary fail, trying fallback:', e.message); return fetchFallback(base); })
-    .then((rates) => { const entry = { ts: Date.now(), rates }; _rateCache.set(base, entry); return entry; })
-    .finally(() => { _rateInflight.delete(base); });
-  _rateInflight.set(base, p);
+  const p = fetchRate(base, quote)
+    .then((r) => {
+      const entry = { ts: Date.now(), rate: r.rate, dataTs: r.ts, source: r.source, label: r.label };
+      _rateCache.set(key, entry);
+      log('rate', key, entry.rate, 'via', entry.source);
+      return entry;
+    })
+    .finally(() => { _rateInflight.delete(key); });
+  _rateInflight.set(key, p);
   return p;
 }
 
@@ -352,11 +326,11 @@ class Converter {
     this.$UD = $UD; this.context = context;
     this.config = {
       from: 'USD', to: 'BRL', amount: 1, decimals: null,
-      intervalMin: 60, theme: 'emerald', font: 'sans', screenMode: 0,
+      intervalMin: 15, theme: 'emerald', font: 'sans', screenMode: 0,
       labels: {}
     };
     this.rate = null; this.prevRate = null; this.dir = 'flat'; this.changePct = null;
-    this.samples = []; this.updated = ''; this.error = false; this.loading = false;
+    this.samples = []; this.updated = ''; this.error = false; this.failures = 0; this.loading = false;
     this.animFrame = 0; this.refreshTimer = null;
     this._lastCfg = Date.now(); // last editor/config activity (guards swap-on-press)
     this._allSamples = samplesStore(); // shared store (one copy for all keys)
@@ -426,39 +400,40 @@ class Converter {
     try {
       if (from === to) { this._apply(1); }
       else {
-        const { rates } = await getRates(from); // coalesced across all keys
-        if (rates[to] == null) throw new Error('no rate');
-        this._apply(rates[to]);
+        const entry = await getRate(from, to); // coalesced across all keys
+        this._apply(entry.rate, entry.dataTs);
       }
-      this.error = false;
+      this.error = false; this.failures = 0;
     } catch (e) {
-      log('refresh fail', e.message); this.error = true;
+      log('refresh fail', e.message); this.error = true; this.failures = (this.failures || 0) + 1;
     } finally {
       this.loading = false; this._scheduleRefresh(); this._startAnim(); this.render();
     }
   }
 
-  _apply(rate) {
-    this.prevRate = this.rate;
+  _apply(rate, dataTs) {
+    const key = this.config.from + this.config.to;
+    const arr = this._allSamples[key] || [];
+    // first fetch for this pair: compare against the last stored sample so the
+    // arrow is meaningful right away instead of waiting for a second refresh.
+    this.prevRate = this.rate != null ? this.rate : (arr.length ? arr[arr.length - 1] : null);
     this.rate = rate;
     if (this.prevRate != null) {
       this.dir = rate > this.prevRate ? 'up' : rate < this.prevRate ? 'down' : 'flat';
       this.changePct = this.prevRate ? ((rate - this.prevRate) / this.prevRate) * 100 : 0;
     }
-    const key = this.config.from + this.config.to;
-    const arr = this._allSamples[key] || [];
     arr.push(rate); while (arr.length > 60) arr.shift();
     this._allSamples[key] = arr; this.samples = arr.slice(-40);
     saveSamplesStore();
-    // footer shows our last successful CHECK time (local now); the free API only
-    // refreshes rates ~once a day, so its time_last_update would look frozen.
-    const d = new Date();
-    this.updated = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    // footer shows when the RATE was published (from the provider payload), not
+    // when we last asked. A daily source therefore shows its date.
+    this.updated = clockLabel(dataTs || Date.now());
   }
 
   _scheduleRefresh() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
-    this.refreshTimer = setTimeout(() => this.refresh(), Math.max(1, this.config.intervalMin) * 60000);
+    const delay = this.failures ? retryDelayMs(this.failures, this.config.intervalMin) : Math.max(1, this.config.intervalMin) * 60000;
+    this.refreshTimer = setTimeout(() => this.refresh(), delay);
   }
 
   // marquee needs the loop even when the animated theme is off
