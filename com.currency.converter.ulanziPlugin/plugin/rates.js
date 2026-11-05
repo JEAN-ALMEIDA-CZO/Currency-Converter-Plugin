@@ -125,6 +125,16 @@ export const SOURCES = [
   },
 ];
 
+/**
+ * Delay before the next fetch after `failures` failures in a row. A failure is
+ * often "no network yet" right after boot, so retry soon, back off to 5 min, and
+ * never wait longer than the normal refresh interval.
+ */
+export function retryDelayMs(failures, intervalMin) {
+  const backoff = Math.min(15_000 * 2 ** (Math.max(1, failures) - 1), 300_000);
+  return Math.min(backoff, Math.max(1, intervalMin) * 60_000);
+}
+
 // ── sanity band ───────────────────────────────────────────────────────────────
 // A source may answer with something real but wrong for us (a crypto token that
 // shares an ISO code, a redenominated currency). Keep the last accepted rate per

@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import opentype from 'opentype.js';
-import { fetchRate } from './rates.js';
+import { fetchRate, retryDelayMs } from './rates.js';
 import { clockLabel } from './clock.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -330,7 +330,7 @@ class Converter {
       labels: {}
     };
     this.rate = null; this.prevRate = null; this.dir = 'flat'; this.changePct = null;
-    this.samples = []; this.updated = ''; this.error = false; this.loading = false;
+    this.samples = []; this.updated = ''; this.error = false; this.failures = 0; this.loading = false;
     this.animFrame = 0; this.refreshTimer = null;
     this._lastCfg = Date.now(); // last editor/config activity (guards swap-on-press)
     this._allSamples = samplesStore(); // shared store (one copy for all keys)
@@ -403,9 +403,9 @@ class Converter {
         const entry = await getRate(from, to); // coalesced across all keys
         this._apply(entry.rate, entry.dataTs);
       }
-      this.error = false;
+      this.error = false; this.failures = 0;
     } catch (e) {
-      log('refresh fail', e.message); this.error = true;
+      log('refresh fail', e.message); this.error = true; this.failures = (this.failures || 0) + 1;
     } finally {
       this.loading = false; this._scheduleRefresh(); this._startAnim(); this.render();
     }
@@ -432,7 +432,8 @@ class Converter {
 
   _scheduleRefresh() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
-    this.refreshTimer = setTimeout(() => this.refresh(), Math.max(1, this.config.intervalMin) * 60000);
+    const delay = this.failures ? retryDelayMs(this.failures, this.config.intervalMin) : Math.max(1, this.config.intervalMin) * 60000;
+    this.refreshTimer = setTimeout(() => this.refresh(), delay);
   }
 
   // marquee needs the loop even when the animated theme is off
